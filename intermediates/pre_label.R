@@ -41,6 +41,8 @@ all_segment_files <- list.files(opt$raw_data,
                                 full.names = TRUE)
 
 # Before splitting any names, get rid of the _cyan if it is there
+#print("Head of segment files")
+#print(head(all_segment_files))
 
 segment_data_table <- data.table(cbind(all_segment_files, str_split_fixed(basename(gsub("_cyan", "", all_segment_files)), "_", 10)))[,1:9]
 
@@ -48,11 +50,15 @@ all_rgb_files <- list.files(opt$raw_data,
                             pattern = 'rgb_processed',
                             full.names = TRUE)
 
+#print("Head of RGB files")
+#print(head(all_rgb_files))
+
 rgb_data_table <- data.table(cbind(all_rgb_files, str_split_fixed(basename(gsub("_cyan", "", all_rgb_files)), "_", 10)))[,1:9]
 
 print(paste0("Looking for CLS files in directory ", CLS_dir))
 all_CLS_files <- list.files(CLS_dir,
-                            full.names = TRUE)
+                            full.names = TRUE,
+                            pattern = 'hdf')
 print(paste0("How many CLS files? ", length(all_CLS_files)))
 
 CLS_data_table <- data.table(cbind(all_CLS_files, str_split_fixed(basename(gsub("_cyan", "", all_CLS_files)), "_", 10)))[,1:9]
