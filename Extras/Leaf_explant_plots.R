@@ -67,10 +67,10 @@ option_list = list(
 opt_parser = OptionParser(option_list=option_list);
 opt = parse_args(opt_parser);
 
-setwd("/home/labgroup/code/GMOlabeler/")
+#setwd("/home/labgroup/code/GMOlabeler/")
 
 ### IF DEBUGGING IN RSTUDIO, UNCOMMENT THIS LINE INSTEAD OF USING OptParser
-# opt <- readRDS("/home/labgroup/code/GMOlabeler/plots/Elements_10/Transformation/GRF_Poplar/GRF1_Phase_2/wk3/gridplot_args.rds")
+#opt <- readRDS("/home/labgroup/code/GMOlabeler/plots/Elements_9/Transformation/FAB_Dev_Genes/wk10/Fluorescent/gridplot_args.rds")
 
 # Import and preprocess data ----------------------------------------------
 
@@ -597,6 +597,9 @@ randomization_datasheet <- randomization_datasheet[!is.na(randomization_datashee
 
 print("N rows of randomization datasheet: ")
 print(nrow(randomization_datasheet))
+
+print("Table of treatments, genotypes:")
+print(table(randomization_datasheet$Genotype_ID, randomization_datasheet$`Treatment name`))
 
 cat("\n")
 print("Plots will be saved to: ")
