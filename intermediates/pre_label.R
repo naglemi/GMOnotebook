@@ -59,6 +59,9 @@ print(paste0("Looking for CLS files in directory ", CLS_dir))
 all_CLS_files <- list.files(CLS_dir,
                             full.names = TRUE,
                             pattern = 'hdf')
+
+all_CLS_files <- all_CLS_files[!grepl("Broadband", all_CLS_files)]
+
 print(paste0("How many CLS files? ", length(all_CLS_files)))
 
 CLS_data_table <- data.table(cbind(all_CLS_files, str_split_fixed(basename(gsub("_cyan", "", all_CLS_files)), "_", 10)))[,1:9]
