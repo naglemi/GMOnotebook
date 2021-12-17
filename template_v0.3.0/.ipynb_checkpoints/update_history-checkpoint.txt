@@ -1,0 +1,8 @@
+# VERSION history
+- v0.2.0 onward applies the Python `GMOdetector` package instead of the deprecated R `GMOdetectoR` package, for much faster runtime
+- v0.2.01 has calls to `conda` cleaned up with `conda activate` and `conda deactivate` in the same code blocks to avoid any problems with warnings/errors preventing automatic execution of subsequent blocks
+- v0.2.02 is cleaned up using path variables (declared in notebook) instead of hardcoded paths, for portability
+- v0.2.03 is more clean to avoid running alignment-processed images through `inference.py` if an analysis if being repeated... also has better instructions
+- v.0.2.05 is updated to work with FAA wk7. Specifically, there are updates to deal with increased image resolution (y~=2000), off-center images, and rotated images, including metadata normalization and user inputs for parameterized grid cropping.
+- v.0.2.07 is updated to deal with the fact that the user may wish to either use an existing homography matrix or produce a new one for alignment... and also to allow the user to easily adjust grid borders, both for contamination model and GMOlabeler modules.
+- v.0.3.0 is updated to use new segmentation model and work without producing test alignment for every single image (to run more quickly)
