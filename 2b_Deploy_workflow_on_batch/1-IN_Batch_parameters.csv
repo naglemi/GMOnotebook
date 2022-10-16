@@ -1,0 +1,24 @@
+Parameter,Dataset_1,Dataset_2,Dataset_3
+user_note,CRIRD_wk3,CRIRD_wk7,CRIRD_wk10
+data,/media/michael/Elements_18/Elements_18/Transformation/717_CRISPR_Reg/CRIRD/wk3/,/media/michael/Elements_18/Elements_18/Transformation/717_CRISPR_Reg/CRIRD/wk7/,/media/michael/Elements_18/Elements_18/Transformation/717_CRISPR_Reg/CRIRD/wk10/
+randomization_datasheet,/media/michael/Elements_18/Elements_18/Transformation/717_CRISPR_Reg/CRIRD/R_test_4_labels_FLA_4_events_only.xlsx,/media/michael/Elements_18/Elements_18/Transformation/717_CRISPR_Reg/CRIRD/R_test_4_labels_FLA_4_events_only.xlsx,/media/michael/Elements_18/Elements_18/Transformation/717_CRISPR_Reg/CRIRD/R_test_4_labels_FLA_4_events_only.xlsx
+missing_explant,Automatic,Automatic,Automatic
+fluorophores,GFP Chl Noise,GFP Chl Noise,GFP Chl Noise
+desired_wavelength_range,500 900,500 900,500 900
+FalseColor_channels,Chl GFP Noise,Chl GFP Noise,Chl GFP Noise
+FalseColor_caps,200 400 200,200 400 200,200 400 200
+reporters,GFP Chl,GFP Chl,GFP Chl
+pixel_threshold,3,3,3
+reporter_threshold,38,38,38
+grid,12,12,12
+pre_aligned_resized_grid_borders,"221,486,1682,1602","221,486,1682,1602","221,486,1682,1602"
+aligned_grid_borders,95 1245 1264 333,95 1245 1264 333,95 1245 1264 333
+mode,scikit,scikit,scikit
+homography,/home/michael/GMOnotebook/manual_alignment/GTUU_wk3_manual/chromagrid_I5.0_F1.9_L100LED30_171422_0_0_0_manual.npy,/home/michael/GMOnotebook/manual_alignment/GTUU_wk3_manual/chromagrid_I5.0_F1.9_L100LED30_171422_0_0_0_manual.npy,/home/michael/GMOnotebook/manual_alignment/GTUU_wk3_manual/chromagrid_I5.0_F1.9_L100LED30_171422_0_0_0_manual.npy
+hypercube_csv,/home/michael/GMOnotebook/manual_alignment/GTUU_wk3_manual/hypercube_to_csv.csv,/home/michael/GMOnotebook/manual_alignment/GTUU_wk3_manual/hypercube_to_csv.csv,/home/michael/GMOnotebook/manual_alignment/GTUU_wk3_manual/hypercube_to_csv.csv
+aligned_grid,/home/michael/GMOnotebook/manual_alignment/GTUU_wk3_manual/chromagrid_I5.0_F1.9_L100LED30_171422_0_0_0_manual_aligned.jpg,/home/michael/GMOnotebook/manual_alignment/GTUU_wk3_manual/chromagrid_I5.0_F1.9_L100LED30_171422_0_0_0_manual_aligned.jpg,/home/michael/GMOnotebook/manual_alignment/GTUU_wk3_manual/chromagrid_I5.0_F1.9_L100LED30_171422_0_0_0_manual_aligned.jpg
+composite,0,0,0
+test_align_each_img,0,0,0
+width,9,9,9
+height,5,5,5
+parallel,0,0,0
