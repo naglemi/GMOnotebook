@@ -1,5 +1,7 @@
 #!/usr/bin/env Rscript
 library("optparse")
+library(data.table)
+library(stringr)
 
 option_list = list(
   make_option(c("-r", "--raw_data"), type="character", default=NULL,
@@ -9,8 +11,13 @@ option_list = list(
   make_option(c("-i", "--y_intercept"), type="numeric", default=20,
               help="0 or 1, need to know so we look in right folder for CLS results", metavar="numeric"),
   make_option(c("-d", "--date"), type="character", default=0,
-              help="formatted as 2020-03-15 - this is the date regression was run", metavar="character")
+              help="formatted as 2020-03-15 - this is the date regression was run", metavar="character"),
+  make_option(c("-k", "--segmentation_model_key"), type="character", default=NULL,
+              help="path to the segmentation model key CSV file", metavar="character")
 );
+
+opt_parser = OptionParser(option_list=option_list);
+opt = parse_args(opt_parser);
 
 # Because datestamp in bash ends up with quotes...
 
@@ -20,12 +27,9 @@ opt = parse_args(opt_parser);
 arg_out_path <- "prelabel_args.rds"
 
 ### IF DEBUGGING IN RSTUDIO, UNCOMMENT THIS LINE INSTEAD OF USING OptParser
-#opt <- readRDS("/scratch2/NSF_GWAS/GMOdetectoR/prelabel_args.rds")
+#opt <- readRDS("/home/gmobot/GMOnotebook/intermediates/prelabel_args.rds")
 
 saveRDS(opt, file = arg_out_path)
-
-library(data.table)
-library(stringr)
 
 print(opt$date)
 this_date <- gsub('”', '', opt$date)
@@ -47,8 +51,10 @@ all_segment_files <- list.files(opt$raw_data,
 segment_data_table <- data.table(cbind(all_segment_files, str_split_fixed(basename(gsub("_cyan", "", all_segment_files)), "_", 10)))[,1:9]
 
 all_rgb_files <- list.files(opt$raw_data,
-                            pattern = 'rgb_processed',
+                            pattern = 'rgb_processed.png',
                             full.names = TRUE)
+
+all_rgb_files <- all_rgb_files[!grepl("csv", all_rgb_files)]
 
 #print("Head of RGB files")
 #print(head(all_rgb_files))
@@ -83,6 +89,28 @@ colnames(rgb_data_table) <- colnames(segment_data_table) <- colnames(CLS_data_ta
                                                                                          "Col")
 CLS_data_table <- CLS_data_table[!grepl("hroma", CLS_data_table$path),]
 
+mark_duplicates <- function(data_table) {
+
+  # Sort by Timestamp in ascending order so that the last occurrence is the most recent
+  data_table <- data_table[order(data_table$Timestamp),]
+
+  # Create Tray_Row_Col identifier
+  data_table$Tray_Row_Col <- paste0(data_table$Tray,
+                                    "_",
+                                    data_table$Row,
+                                    "_",
+                                    data_table$Col)
+
+  # Mark duplicates based on Tray_Row_Col identifier, keeping the last occurrence
+  data_table <- data_table[!duplicated(data_table$Tray_Row_Col, fromLast = TRUE), ]
+
+  return(data_table)
+}
+
+segment_data_table <- mark_duplicates(segment_data_table)
+rgb_data_table <- mark_duplicates(rgb_data_table)
+CLS_data_table <- mark_duplicates(CLS_data_table)
+
 combined_data_table.1 <- merge(rgb_data_table,
                             segment_data_table,
                             by=c("Tray",
@@ -91,63 +119,58 @@ combined_data_table.1 <- merge(rgb_data_table,
                                  "LaserIntensity",
                                  "Timestamp",
                                  "Row",
-                                 "Col"))
+                                 "Col",
+                                 "Tray_Row_Col"))
 
-combined_data_table.2 <- merge(combined_data_table.1,
+combined_data_table.4 <- merge(combined_data_table.1,
                             CLS_data_table,
                             by=c("Tray",
                                  "IntegrationTime",
                                  "Focus",
                                  "LaserIntensity",
-                                 "Timestamp",
+                                 #Timestamp",
                                  "Row",
-                                 "Col"),
+                                 "Col",
+                                 "Tray_Row_Col"),
                              all.x = TRUE,
                              all.y = TRUE)
 
-# Now sort and remove first instances of duplicates (bad images)
+out <- as.data.table(cbind(combined_data_table.4$path.x, combined_data_table.4$path.y, combined_data_table.4$path))
+colnames(out)[1:3] <- c("rgb", "segment", "CLS_data")
+out$threshold <- NA
 
-combined_data_table.3 <- combined_data_table.2[order(-Timestamp)]
-
-combined_data_table.3$Tray_Row_Col <- paste0(combined_data_table.3$Tray,
-                                             "_",
-                                            combined_data_table.3$Row,
-                                             "_",
-                                            combined_data_table.3$Col)
-
-combined_data_table.3$SeenBefore <- numeric(0)
-
-Tray_Row_Col_seen <- c('NA')
-
-for(i in 1:nrow(combined_data_table.3)){
-    #print(paste0('Have so far seen ', length(Tray_Row_Col_seen), ' total'))
-    this_plate <- combined_data_table.3$Tray_Row_Col[i]
-    #print(paste0('Checking if ', this_plate, ' is in list of those seen already'))
-    if(sum(grepl(this_plate, Tray_Row_Col_seen))>=1){
-        print(paste0('We will only include in analysis the FINAL of multiple images for ', combined_data_table.3$Tray_Row_Col[i]))
-        combined_data_table.3$SeenBefore[i] <- 1
-    }
-    else{
-        #print(paste0('Not already seen. Adding to list.'))
-        combined_data_table.3$SeenBefore[i] <- 0
-        Tray_Row_Col_seen <- append(Tray_Row_Col_seen, combined_data_table.3$Tray_Row_Col[i])
-    }
+# Conditional operation based on the presence of the segmentation model key
+if (!is.null(opt$segmentation_model_key)) {
+  model_key_data <- fread(opt$segmentation_model_key)
+  model_key_data[, Tissue := tolower(Tissue)]  # Convert tissue column to lowercase
+  tissue_types <- model_key_data$Tissue[model_key_data$Tissue != "background"]
+  for (tissue in tissue_types) {
+    out[[paste0("mean_", tissue, "_signal")]] <- NA
+    out[[paste0(tissue, "_signal_total")]] <- NA
+    out[[paste0("n_pixels_", tissue, "_transgenic")]] <- NA
+    out[[paste0("n_pixels_", tissue, "_escape")]] <- NA
+  }
+  col_order <- c("segment", "CLS_data", "rgb")
+  for (tissue in tissue_types) {
+    col_order <- c(col_order, paste0("mean_", tissue, "_signal"),
+                   paste0(tissue, "_signal_total"),
+                   paste0("n_pixels_", tissue, "_transgenic"),
+                   paste0("n_pixels_", tissue, "_escape"))
+  }
+  col_order <- c(col_order, "threshold")
+  setcolorder(out, col_order)
+} else {
+  # Original 'out' table creation as specified
+  out$mean_callus_signal <- out$mean_shoot_signal <- out$callus_signal_total <- out$shoot_signal_total <- NA
+  out$n_pixels_callus_transgenic <- out$n_pixels_callus_escape <- NA
+  out$n_pixels_shoot_transgenic <- out$n_pixels_shoot_escape <- out$threshold <- NA
+  setcolorder(out, c("segment", "CLS_data", "rgb", "mean_callus_signal", "mean_shoot_signal",
+                     "callus_signal_total", "shoot_signal_total", "n_pixels_callus_transgenic", "n_pixels_callus_escape",
+                     "n_pixels_shoot_transgenic", "n_pixels_shoot_escape", "threshold"))
 }
 
-combined_data_table.4 <- combined_data_table.3[SeenBefore==0]
-
-# Prepare output
-
-out <- as.data.table(cbind(combined_data_table.4$path.x, combined_data_table.4$path.y, combined_data_table.4$path)) #combined_data_table.4[,9:11]
-out$mean_callus_signal <- out$mean_shoot_signal <- out$callus_signal_total <- out$shoot_signal_total <- NA
-out$n_pixels_callus_transgenic <- out$n_pixels_callus_escape <- NA
-out$n_pixels_shoot_transgenic <- out$n_pixels_shoot_escape <- out$threshold <- NA
-colnames(out)[1:3] <- c("rgb", "segment", "CLS_data")
-setcolorder(out, c("segment", "CLS_data", "rgb", "mean_callus_signal", "mean_shoot_signal",
-                  "callus_signal_total", "shoot_signal_total", "n_pixels_callus_transgenic", "n_pixels_callus_escape",
-                  "n_pixels_shoot_transgenic", "n_pixels_shoot_escape", "threshold"))
-
-sample_out_path <- paste0(opt$raw_data, "/samples_pre_labeling.csv")
+# Exclude rows that contain the substring "hroma" in any column
+out <- out[!apply(out, 1, function(row) any(grepl("hroma", row))), ]
 
 if( nrow(na.omit(out[,1:3])) < nrow(out[,1:3])) {
   warning("There is an inconsistency. There are some files for which we do not have both hyperspectral and RGB data. These have been excluded.")
@@ -158,7 +181,7 @@ if( nrow(na.omit(out[,1:3])) < nrow(out[,1:3])) {
   print("Rows missing segment data:")
   print(out[ is.na(out$segment) , 1:3])
   cat("\n")
-  print("Rows missing regressopm data:")
+  print("Rows missing regression data:")
   print(out[ is.na(out$CLS_data) , 1:3])
   cat("\n")
 }
@@ -166,6 +189,8 @@ if( nrow(na.omit(out[,1:3])) < nrow(out[,1:3])) {
 out <- out[ !is.na(out$rgb) , ]
 out <- out[ !is.na(out$segment) , ]
 out <- out[ !is.na(out$CLS_data) , ]
+
+sample_out_path <- paste0(opt$raw_data, "/samples_pre_labeling.csv")
 
 print(paste0('Writing ', nrow(out), ' rows to ', sample_out_path))
 
