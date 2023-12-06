@@ -19,17 +19,12 @@ option_list = list(
 opt_parser = OptionParser(option_list=option_list);
 opt = parse_args(opt_parser);
 
-# Because datestamp in bash ends up with quotes...
-
-opt_parser = OptionParser(option_list=option_list);
-opt = parse_args(opt_parser);
-
-arg_out_path <- "prelabel_args.rds"
+#arg_out_path <- paste0(opt$raw_data, "/prelabel_args.rds")
 
 ### IF DEBUGGING IN RSTUDIO, UNCOMMENT THIS LINE INSTEAD OF USING OptParser
 #opt <- readRDS("/home/gmobot/GMOnotebook/intermediates/prelabel_args.rds")
 
-saveRDS(opt, file = arg_out_path)
+#saveRDS(opt, file = arg_out_path)
 
 print(opt$date)
 this_date <- gsub('”', '', opt$date)
