@@ -7,6 +7,7 @@ import numpy as np
 from spectral import *
 from PIL import Image
 import matplotlib.pyplot as plt
+import re
 
 # Function Definitions
 def moving_average(data, window_size):
@@ -68,6 +69,28 @@ def plot_heatmap(mode, CLS_matrix, y1, y2, x1, x2, data_path):
     plt.savefig(os.path.join(data_path, f"{mode}_heatmap.png"))
     plt.show()
 
+def select_latest_file(filenames):
+    timestamped_files = []
+
+    for file in filenames:
+        # Find all six-digit numbers in the filename
+        timestamps = re.findall(r'\d{6}', file)
+
+        # Check if there's exactly one six-digit number in the filename
+        if len(timestamps) != 1:
+            raise ValueError(f"Filename '{file}' does not contain exactly one six-digit timestamp.")
+
+        # Add the filename and its timestamp to the list
+        timestamped_files.append((file, int(timestamps[0])))
+
+    # Sort the list by timestamp (second item of tuple)
+    timestamped_files.sort(key=lambda x: x[1], reverse=True)
+
+    # Select the file with the latest timestamp
+    selected_file = timestamped_files[0][0]
+    print(f"Selected file: {selected_file}")
+    return selected_file
+
 # Main Function
 def main(args):
     data = args.data
@@ -94,10 +117,12 @@ def main(args):
             # Print or return the filtered file
             print("Selected file:", selected_file)
             
-            # Assert that the length of the filtered files is 1
-            assert len(selected_file) == 1, f"Expected 1 file, found {len(selected_file)}"
-
-            hdr_path=os.path.join(data, selected_file[0])
+            if len(selected_file) > 1:
+                print("Warning: More than one grid file was found. Selecting the one taken last.")
+                
+                selected_file = select_latest_file(selected_file)
+                
+            hdr_path=os.path.join(data, selected_file)
 
             image1 = envi.open(hdr_path)
 
@@ -119,7 +144,12 @@ def main(args):
 
             # Load the image
             selected_file = [f for f in all_files if "hromagrid" in f and "jpg" in f]
-            jpg_path=os.path.join(data, selected_file[0])
+            
+            if len(selected_file) > 1:
+                print("Warning: More than one grid file was found. Selecting the one taken last.")
+                selected_file = select_latest_file(selected_file)
+            
+            jpg_path=os.path.join(data, selected_file)
             image = Image.open(jpg_path)
 
             # Convert to grayscale
