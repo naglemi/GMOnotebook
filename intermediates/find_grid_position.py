@@ -8,6 +8,7 @@ from spectral import *
 from PIL import Image
 import matplotlib.pyplot as plt
 import re
+from scipy.ndimage import gaussian_filter, sobel
 
 # Function Definitions
 def moving_average(data, window_size):
