@@ -13,6 +13,12 @@ import re
 def moving_average(data, window_size):
     return np.convolve(data, np.ones(window_size)/window_size, mode='valid')
 
+def gaussian_smoothing(data, sigma):
+    """
+    Apply Gaussian smoothing to a 1D numpy array.
+    """
+    return gaussian_filter(data, sigma=sigma)
+
 def plot_on_axes(ax, data, style, title, legend_label=None, x_data=None):
     if x_data is None:
         x_data = range(len(data))
@@ -170,18 +176,20 @@ def main(args):
         row_avg = np.mean(CLS_matrix, axis=1)
         col_avg = np.mean(CLS_matrix, axis=0)
 
-        # Apply a moving average with a window size of 3
-        window_size = 4
-        row_avg_smooth = moving_average(row_avg, window_size)
-        col_avg_smooth = moving_average(col_avg, window_size)
-
-        # Compute the first and second derivatives of the smoothed data
+        sigma_for_smoothing = 4 / np.sqrt(8 * np.log(2))
+        
+        row_avg_smooth = gaussian_smoothing(row_avg, sigma_for_smoothing)
+        col_avg_smooth = gaussian_smoothing(col_avg, sigma_for_smoothing)
+        
+        # Compute the first derivatives of the smoothed data
         row_derivative1 = np.diff(row_avg_smooth)
-        row_derivative2 = np.diff(row_derivative1)
-
         col_derivative1 = np.diff(col_avg_smooth)
-        col_derivative2 = np.diff(col_derivative1)
 
+        # Compute the second derivatives of the smoothed data
+        row_derivative2 = np.diff(row_derivative1)
+        col_derivative2 = np.diff(col_derivative1)
+        
+        # Find the indices of the maximum and minimum values in the first derivative
         y1 = np.argmax(row_derivative1)
         y2 = np.argmin(row_derivative1)
         x1 = np.argmax(col_derivative1)
