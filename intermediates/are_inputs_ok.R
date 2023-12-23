@@ -92,18 +92,21 @@ if (length(desired_wavelength_range) != 2 || !all(sapply(desired_wavelength_rang
   warning("desired_wavelength_range must contain two integers")
 }
 
-# Check FalseColor_caps
-FalseColor_caps <- as.integer(strsplit(opt$FalseColor_caps, " ")[[1]])
-if (length(FalseColor_caps) != 3 || !all(sapply(FalseColor_caps, is.numeric))) {
-  warning("FalseColor_caps must contain three integers")
+# Function to check if a string represents a valid integer
+is_valid_integer <- function(s) {
+  return(grepl("^\\d+$", s))
 }
 
-# Check pixel_threshold and reporter_threshold
-if (!is.numeric(opt$pixel_threshold)) {
-  warning("pixel_threshold must be an integer")
+# Parse and check desired_wavelength_range
+desired_wavelength_range <- unlist(strsplit(opt$desired_wavelength_range, " "))
+if (length(desired_wavelength_range) != 2 || !all(sapply(desired_wavelength_range, is_valid_integer))) {
+  warning("desired_wavelength_range must contain two integers")
 }
-if (!is.numeric(opt$reporter_threshold)) {
-  warning("reporter_threshold must be an integer")
+
+# Parse and check FalseColor_caps
+FalseColor_caps <- unlist(strsplit(opt$FalseColor_caps, " "))
+if (length(FalseColor_caps) != 3 || !all(sapply(FalseColor_caps, is_valid_integer))) {
+  warning("FalseColor_caps must contain three integers")
 }
 
 library(readxl)
@@ -112,12 +115,12 @@ library(readxl)
 randomization_datasheet <- read_excel(opt$randomization_datasheet)
 
 # Check if the first column is an integer with colname Image#
-if (!is.integer(randomization_datasheet[[1]]) || names(randomization_datasheet)[1] != "Image#") {
+if (names(randomization_datasheet)[1] != "Image#") {
   warning("The first column must be an integer with column name 'Image#'")
 }
 
 # Check if the second column is a string with colname TrayID
-if (!is.character(randomization_datasheet[[2]]) || names(randomization_datasheet)[2] != "TrayID") {
+if (names(randomization_datasheet)[2] != "TrayID") {
   warning("The second column must be a string with column name 'TrayID'")
 }
 

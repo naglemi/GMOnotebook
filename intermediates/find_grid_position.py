@@ -16,6 +16,12 @@ def gaussian_smoothing(data, sigma):
     """
     return gaussian_filter(data, sigma=sigma)
 
+def gaussian_smoothing(data, sigma):
+    """
+    Apply Gaussian smoothing to a 1D numpy array.
+    """
+    return gaussian_filter(data, sigma=sigma)
+
 def plot_on_axes(ax, data, style, title, legend_label=None, x_data=None):
     if x_data is None:
         x_data = range(len(data))
