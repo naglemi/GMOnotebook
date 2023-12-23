@@ -8,10 +8,13 @@ from spectral import *
 from PIL import Image
 import matplotlib.pyplot as plt
 import re
+from scipy.ndimage import gaussian_filter, sobel
 
-# Function Definitions
-def moving_average(data, window_size):
-    return np.convolve(data, np.ones(window_size)/window_size, mode='valid')
+def gaussian_smoothing(data, sigma):
+    """
+    Apply Gaussian smoothing to a 1D numpy array.
+    """
+    return gaussian_filter(data, sigma=sigma)
 
 def plot_on_axes(ax, data, style, title, legend_label=None, x_data=None):
     if x_data is None:
@@ -25,17 +28,17 @@ def plot_derivatives(row_avg, row_avg_smooth,
                      col_avg, col_avg_smooth,
                      row_derivative1, col_derivative1,
                      row_derivative2, col_derivative2,
-                     window_size, mode, data_path):
+                     mode, data_path):
 
     # Plotting
     fig, axs = plt.subplots(3, 2, figsize=(18, 12))
     
     # Average values
     plot_on_axes(axs[0, 0], row_avg, 'o-', mode + ' Row Averages', 'Original')
-    plot_on_axes(axs[0, 0], row_avg_smooth, 'x-', mode + ' Row Averages', 'Smoothed', range(window_size-1, len(row_avg)))
+    plot_on_axes(axs[0, 0], row_avg_smooth, 'x-', mode + ' Row Averages', 'Smoothed')
 
     plot_on_axes(axs[0, 1], col_avg, 'o-', mode + ' Column Averages', 'Original')
-    plot_on_axes(axs[0, 1], col_avg_smooth, 'x-', mode + ' Column Averages', 'Smoothed', range(window_size-1, len(col_avg)))
+    plot_on_axes(axs[0, 1], col_avg_smooth, 'x-', mode + ' Column Averages', 'Smoothed')
 
     # First derivative
     plot_on_axes(axs[1, 0], row_derivative1, 'x-', mode + ' First Derivative of Smoothed Row Averages')
@@ -48,6 +51,7 @@ def plot_derivatives(row_avg, row_avg_smooth,
     plt.tight_layout()
     plt.savefig(os.path.join(data_path, f"{mode}_derivatives.png"))
     plt.show()
+
 
 def plot_heatmap(mode, CLS_matrix, y1, y2, x1, x2, data_path):
     fig, axs = plt.subplots(1, 1)
@@ -143,7 +147,7 @@ def main(args):
         if mode == "RGB":
 
             # Load the image
-            selected_file = [f for f in all_files if "hromagrid" in f and "jpg" in f]
+            selected_file = [f for f in all_files if "hromagrid" in f and "_rgb.jpg" in f]
             
             if len(selected_file) > 1:
                 print("Warning: More than one grid file was found. Selecting the one taken last.")
@@ -170,18 +174,20 @@ def main(args):
         row_avg = np.mean(CLS_matrix, axis=1)
         col_avg = np.mean(CLS_matrix, axis=0)
 
-        # Apply a moving average with a window size of 3
-        window_size = 4
-        row_avg_smooth = moving_average(row_avg, window_size)
-        col_avg_smooth = moving_average(col_avg, window_size)
-
-        # Compute the first and second derivatives of the smoothed data
+        sigma_for_smoothing = 4 / np.sqrt(8 * np.log(2))
+        
+        row_avg_smooth = gaussian_smoothing(row_avg, sigma_for_smoothing)
+        col_avg_smooth = gaussian_smoothing(col_avg, sigma_for_smoothing)
+        
+        # Compute the first derivatives of the smoothed data
         row_derivative1 = np.diff(row_avg_smooth)
-        row_derivative2 = np.diff(row_derivative1)
-
         col_derivative1 = np.diff(col_avg_smooth)
-        col_derivative2 = np.diff(col_derivative1)
 
+        # Compute the second derivatives of the smoothed data
+        row_derivative2 = np.diff(row_derivative1)
+        col_derivative2 = np.diff(col_derivative1)
+        
+        # Find the indices of the maximum and minimum values in the first derivative
         y1 = np.argmax(row_derivative1)
         y2 = np.argmin(row_derivative1)
         x1 = np.argmax(col_derivative1)
@@ -216,8 +222,7 @@ def main(args):
         if plot:
             plot_derivatives(row_avg, row_avg_smooth, col_avg, col_avg_smooth,
                              row_derivative1, col_derivative1, row_derivative2, col_derivative2,
-                             window_size, mode, data)
-
+                             mode, data)
             plot_heatmap(mode, CLS_matrix, y1, y2, x1, x2, data)
             
             debug_time = time.time()
