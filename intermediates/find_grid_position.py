@@ -16,12 +16,6 @@ def gaussian_smoothing(data, sigma):
     """
     return gaussian_filter(data, sigma=sigma)
 
-def gaussian_smoothing(data, sigma):
-    """
-    Apply Gaussian smoothing to a 1D numpy array.
-    """
-    return gaussian_filter(data, sigma=sigma)
-
 def plot_on_axes(ax, data, style, title, legend_label=None, x_data=None):
     if x_data is None:
         x_data = range(len(data))
@@ -122,7 +116,7 @@ def main(args):
 
         if mode == "hyperspectral" :
 
-            selected_file = [f for f in all_files if "Broadband" in f and "hroma" in f and "hdr" in f]
+            selected_file = [f for f in all_files if "Fluorescen" in f and "hroma" in f and "hdr" in f]
             
             # Print or return the filtered file
             print("Selected file:", selected_file)
