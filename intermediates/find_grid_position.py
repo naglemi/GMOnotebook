@@ -10,10 +10,23 @@ import matplotlib.pyplot as plt
 import re
 from scipy.ndimage import gaussian_filter, sobel
 
-def gaussian_smoothing(data, sigma):
+def calculate_size_factor(image_shape, reference_shape=(4000, 4000)):
+    """
+    Calculate a size factor based on the image size relative to a reference size.
+    """
+    current_size = np.mean(image_shape[:2])  # Average of the x and y dimensions
+    reference_size = np.mean(reference_shape)
+    size_factor = current_size / reference_size
+    return size_factor
+
+def gaussian_smoothing(data, image_shape, sigma_base=4, adjustable_param=1.0):
     """
     Apply Gaussian smoothing to a 1D numpy array.
+    sigma_base: The base sigma value that works well for the reference image size.
+    adjustable_param: A user-adjustable parameter to control the amount of smoothing.
     """
+    size_factor = calculate_size_factor(image_shape)
+    sigma = (sigma_base * size_factor) * adjustable_param
     return gaussian_filter(data, sigma=sigma)
 
 def plot_on_axes(ax, data, style, title, legend_label=None, x_data=None):
@@ -174,10 +187,8 @@ def main(args):
         row_avg = np.mean(CLS_matrix, axis=1)
         col_avg = np.mean(CLS_matrix, axis=0)
 
-        sigma_for_smoothing = 4 / np.sqrt(8 * np.log(2))
-        
-        row_avg_smooth = gaussian_smoothing(row_avg, sigma_for_smoothing)
-        col_avg_smooth = gaussian_smoothing(col_avg, sigma_for_smoothing)
+        row_avg_smooth = gaussian_smoothing(row_avg, CLS_matrix.shape, sigma_base=10)
+        col_avg_smooth = gaussian_smoothing(col_avg, CLS_matrix.shape, sigma_base=10)
         
         # Compute the first derivatives of the smoothed data
         row_derivative1 = np.diff(row_avg_smooth)

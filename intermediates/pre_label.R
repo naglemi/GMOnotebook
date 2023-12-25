@@ -19,12 +19,12 @@ option_list = list(
 opt_parser = OptionParser(option_list=option_list);
 opt = parse_args(opt_parser);
 
-#arg_out_path <- paste0(opt$raw_data, "/prelabel_args.rds")
+arg_out_path <- paste0(opt$raw_data, "/prelabel_args.rds")
 
 ### IF DEBUGGING IN RSTUDIO, UNCOMMENT THIS LINE INSTEAD OF USING OptParser
 #opt <- readRDS("/home/gmobot/GMOnotebook/intermediates/prelabel_args.rds")
 
-#saveRDS(opt, file = arg_out_path)
+saveRDS(opt, file = arg_out_path)
 
 print(opt$date)
 this_date <- gsub('”', '', opt$date)
@@ -50,11 +50,13 @@ all_rgb_files <- list.files(opt$raw_data,
                             full.names = TRUE)
 
 all_rgb_files <- all_rgb_files[!grepl("csv", all_rgb_files)]
+print(paste0("How many RGB files? ", length(all_rgb_files)))
 
 #print("Head of RGB files")
 #print(head(all_rgb_files))
 
 rgb_data_table <- data.table(cbind(all_rgb_files, str_split_fixed(basename(gsub("_cyan", "", all_rgb_files)), "_", 10)))[,1:9]
+
 
 print(paste0("Looking for CLS files in directory ", CLS_dir))
 all_CLS_files <- list.files(CLS_dir,
