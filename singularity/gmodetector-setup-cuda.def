@@ -1,0 +1,148 @@
+Bootstrap: library
+From: ubuntu:22.04
+
+%post
+    # Set non-interactive frontend to avoid stuck installations
+    export DEBIAN_FRONTEND=noninteractive
+
+    echo "SINGULARITY_CACHEDIR=$SINGULARITY_CACHEDIR"
+    echo "TMPDIR=$TMPDIR"
+
+    # Update package lists
+    apt-get update -y
+    
+    # Install locales package
+    apt-get install -y locales
+
+    # Generate desired locale
+    locale-gen en_US.UTF-8
+
+    # Set environment variables for locale
+    echo "export LANG=en_US.UTF-8" >> $SINGULARITY_ENVIRONMENT
+    echo "export LC_ALL=en_US.UTF-8" >> $SINGULARITY_ENVIRONMENT
+
+    # Preconfigure tzdata
+    ln -fs /usr/share/zoneinfo/Etc/UTC /etc/localtime
+    echo 'Etc/UTC' > /etc/timezone
+    apt-get install -y tzdata
+
+    # Install Python 3.7 and 3.8
+    apt-get install -y software-properties-common
+    apt-get install -y python3-apt  # Ensure python3-apt is installed for add-apt-repository
+    add-apt-repository -y ppa:deadsnakes/ppa
+    apt-get update  # Ensure the package list is updated after adding the repository
+    apt-get install -y python3.7 python3.7-dev python3.7-venv python3.7-distutils
+    apt-get install -y python3.8 python3.8-dev python3.8-venv python3.8-distutils
+    
+    # Install wget
+    apt-get install -y wget
+    
+    # Install R
+    apt-get install -y r-base
+
+    # Find the R home directory and export it (modify this according to your R installation)
+    export R_HOME=/usr/lib/R
+
+    # Add R to PATH (modify this according to your R installation)
+    export PATH=$PATH:/usr/lib/R/bin
+
+    # Install pip for Python 3.7
+    wget https://bootstrap.pypa.io/get-pip.py -O get-pip.py
+    python3.7 get-pip.py
+    python3.8 get-pip.py
+    rm get-pip.py
+
+    # Replace existing python3 symlink, if it exists, with Python 3.8
+    if [ -f /usr/bin/python3 ] || [ -L /usr/bin/python3 ]; then
+        rm /usr/bin/python3
+    fi
+    ln -s /usr/bin/python3.8 /usr/bin/python3
+
+    # Replace existing python symlink, if it exists, with Python 3.8
+    if [ -f /usr/bin/python ] || [ -L /usr/bin/python ]; then
+        rm /usr/bin/python
+    fi
+    ln -s /usr/bin/python3.8 /usr/bin/python
+
+    # Upgrade pip and setuptools for both Python versions
+    python3.7 -m pip install --upgrade pip setuptools wheel
+    python3.8 -m pip install --upgrade pip setuptools wheel
+
+    # Install JupyterLab and Python dependencies globally
+    python3.8 -m pip install jupyterlab==3.0.3 nodejs bash_kernel ipywidgets
+    python3.8 -m bash_kernel.install
+
+    # Install Python dependencies used in multiple modules for Python 3.7
+    python3.7 -m pip install easydict pytest codecov numpy pandas matplotlib tzlocal h5py tables scipy deap seaborn Pillow typing tensorflow==1.14 keras==2.3.1 tensorboard keras argparse pyyaml tifffile opencv-python-headless scikit-image protobuf==3.20.0
+
+    # Install Python dependencies used in multiple modules for Python 3.8
+    python3.8 -m pip install pytest codecov numpy pandas matplotlib tzlocal h5py tables rpy2 scikit-learn==1.2.2 scipy deap seaborn Pillow typing tensorboard argparse papermill pyyaml tifffile opencv-python-headless scikit-image
+
+    # Install essential tools and libraries
+    apt-get install -y git libffi-dev bc parallel
+
+    # Clone and install Python packages from repositories
+    git clone https://github.com/naglemi/cubeglm.git /home/cubeglm
+    cd /home/cubeglm
+    python3.8 -m pip install .
+    cd ..
+    
+    git clone https://github.com/naglemi/cubeml.git /home/cubeml
+    cd /home/cubeml
+    python3.8 -m pip install .
+    cd ..
+
+    # Download and set up additional repositories
+    git clone https://github.com/naglemi/GMOnotebook.git /home/GMOnotebook
+    git clone https://github.com/naglemi/DenseNet.git /home/DenseNet
+    git clone https://github.com/NSF-Image-alignment/ImageAlignment.git /home/ImageAlignment
+    git clone https://github.com/naglemi/GMOlabeler.git /home/GMOlabeler 
+
+    # Install system dependencies
+    apt-get install -y cmake libcurl4-openssl-dev libssl-dev libxml2-dev libv8-dev 
+    
+    # Install exiftool to make image orientations uniform
+    apt-get install -y exiftool
+
+    # Set R_LIBS before installing packages
+    export R_LIBS=/usr/local/lib/R/site-library
+
+    # Install R packages
+    R -e "install.packages(c('data.table', 'scales', 'readxl', 'ggplot2', 'optparse', 'stringr', 'permutes', 'tidyr'), repos = 'http://cran.us.r-project.org')"
+    R -e "install.packages('randomcoloR', repos = 'http://cran.us.r-project.org')"
+    R -e "install.packages('nloptr', repos = 'http://cran.us.r-project.org')"
+    R -e "install.packages('lme4', repos = 'http://cran.us.r-project.org')"
+    R -e "install.packages('buildmer', repos = 'http://cran.us.r-project.org')"
+    R -e "install.packages('car', repos = 'http://cran.us.r-project.org')"
+
+    if [ "$INCLUDE_CUDA" = "y" ]; then
+        wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-ubuntu2204.pin
+        mv cuda-ubuntu2204.pin /etc/apt/preferences.d/cuda-repository-pin-600
+        wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.0-1_all.deb
+        dpkg -i cuda-keyring_1.0-1_all.deb
+        apt-get update
+        apt-get -y install cuda-toolkit-11-7
+    fi
+    
+#%setup
+#    cp -r /home/gmobot/GMOGUI/models $SINGULARITY_ROOTFS/home/
+
+#%files
+
+%environment
+    export PATH=/home/cubeglm:$PATH
+    export PATH=/home/GMOnotebook:$PATH
+    export PATH=/home/DenseNet:$PATH
+    export PATH=/home/ImageAlignment:$PATH
+    export PATH=/home/GMOlabeler:$PATH
+    export LANG=en_US.UTF-8
+    export LC_ALL=en_US.UTF-8
+    export R_LIBS=/usr/local/lib/R/site-library
+    if [ "$INCLUDE_CUDA" = "y" ]; then
+        export PATH=/usr/local/cuda-11.7/bin:$PATH
+        export LD_LIBRARY_PATH=/usr/local/cuda-11.7/lib64:$LD_LIBRARY_PATH
+    fi
+
+%runscript
+    exec /bin/bash "$@"
+
