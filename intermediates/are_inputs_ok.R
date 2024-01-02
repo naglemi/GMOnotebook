@@ -35,6 +35,8 @@
 # opt <- lapply(opt, function(x) if(is.character(x)) gsub("cubeglm", "gmodetector_py", x) else x)
 
 library(optparse)
+library(stringr)
+library(readxl)
 
 # Define command line arguments
 option_list <- list(
@@ -144,8 +146,6 @@ FalseColor_caps <- unlist(strsplit(opt$FalseColor_caps, ","))
 if (length(FalseColor_caps) != 3 || !all(sapply(FalseColor_caps, is_valid_integer))) {
   warning("FalseColor_caps must contain three integers")
 }
-
-library(readxl)
 
 # Read in the randomization datasheet
 randomization_datasheet <- suppressMessages(read_excel(opt$randomization_datasheet))
